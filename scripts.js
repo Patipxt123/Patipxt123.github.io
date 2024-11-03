@@ -4,56 +4,92 @@ window.addEventListener('load', () => {
   const bgMusic = document.getElementById('bgMusic');
   const audioIcon = document.getElementById('audioIcon');
   const bgVideo = document.getElementById('bg-video');
-  let isMuted = false;
-
+  
   // เช็คว่าเป็น iOS หรือไม่
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
   
-  // เริ่มต้นให้เสียงปิด
-  bgMusic.volume = 0;
-  
-  // ฟังก์ชันควบคุมเสียงสำหรับ iOS
-  const toggleSound = () => {
-    if (isMuted) {
-      if (isIOS) {
-        bgMusic.play();
-      }
-      bgMusic.volume = 1;
-      audioIcon.className = 'fas fa-volume-up';
-    } else {
-      if (isIOS) {
-        bgMusic.pause();
-      }
-      bgMusic.volume = 0;
-      audioIcon.className = 'fas fa-volume-mute';
+  // สถานะเสียง
+  let audioState = {
+    isPlaying: false,
+    audioContext: null,
+    gainNode: null
+  };
+
+  // สร้าง Audio Context สำหรับ iOS
+  const initAudioContext = () => {
+    if (!audioState.audioContext) {
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      audioState.audioContext = new AudioContext();
+      
+      // สร้าง media element source
+      const source = audioState.audioContext.createMediaElementSource(bgMusic);
+      
+      // สร้าง gain node สำหรับควบคุมเสียง
+      audioState.gainNode = audioState.audioContext.createGain();
+      
+      // เชื่อมต่อ nodes
+      source.connect(audioState.gainNode);
+      audioState.gainNode.connect(audioState.audioContext.destination);
     }
-    isMuted = !isMuted;
+  };
+
+  // ฟังก์ชันควบคุมเสียง
+  const toggleSound = async () => {
+    if (!audioState.audioContext) {
+      return;
+    }
+
+    if (audioState.isPlaying) {
+      // ปิดเสียง
+      audioState.gainNode.gain.value = 0;
+      audioIcon.className = 'fas fa-volume-mute';
+      if (isIOS) {
+        await bgMusic.pause();
+      }
+    } else {
+      // เปิดเสียง
+      audioState.gainNode.gain.value = 1;
+      audioIcon.className = 'fas fa-volume-up';
+      if (isIOS) {
+        await bgMusic.play();
+      }
+    }
+    audioState.isPlaying = !audioState.isPlaying;
   };
 
   // เริ่มต้นการทำงานเมื่อกดปุ่ม Click to Enter
-  clickToEnter.addEventListener('click', () => {
+  clickToEnter.addEventListener('click', async () => {
     clickToEnter.style.display = 'none';
     container.style.display = 'block';
     
-    bgVideo.play().catch(console.warn);
-    
-    // เล่นเสียงเมื่อกดปุ่ม
-    bgMusic.volume = 1;
-    bgMusic.play().catch(error => {
-      console.warn('Cannot play audio:', error);
+    try {
+      // เริ่ม audio context
+      initAudioContext();
+      
+      // รอให้ context พร้อม
+      if (audioState.audioContext.state === 'suspended') {
+        await audioState.audioContext.resume();
+      }
+      
+      // เล่นวิดีโอและเสียง
+      bgVideo.play().catch(console.warn);
+      await bgMusic.play();
+      
+      // ตั้งค่าเริ่มต้น
+      audioState.isPlaying = true;
+      audioState.gainNode.gain.value = 1;
+      audioIcon.className = 'fas fa-volume-up';
+    } catch (error) {
+      console.warn('Audio initialization failed:', error);
       audioIcon.className = 'fas fa-volume-mute';
-      isMuted = true;
-    });
-    
-    audioIcon.className = 'fas fa-volume-up';
+      audioState.isPlaying = false;
+    }
 
     setTimeout(() => {
       container.classList.add('fade-in');
     }, 100);
   });
 
-  // ปุ่มควบคุมเสียงที่ปรับปรุงใหม่
-  audioIcon.addEventListener('click', () => {
-    toggleSound();
-  });
+  // ปุ่มควบคุมเสียง
+  audioIcon.addEventListener('click', toggleSound);
 });
