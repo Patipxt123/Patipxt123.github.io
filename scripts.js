@@ -5,19 +5,32 @@ window.addEventListener('load', () => {
   const audioIcon = document.getElementById('audioIcon');
   const bgVideo = document.getElementById('bg-video');
   let isMuted = false;
-
+  
+  // เริ่มต้นให้เสียงปิดจนกว่าจะกดปุ่ม Click to Enter
+  bgMusic.volume = 0;
+  
   // เริ่มต้นการทำงานเมื่อกดปุ่ม Click to Enter
   clickToEnter.addEventListener('click', () => {
+    // ซ่อนปุ่ม Click to Enter และแสดง container
     clickToEnter.style.display = 'none';
     container.style.display = 'block';
-
-    // เล่นวิดีโอและเสียง
-    bgVideo.play();
+    
+    // เล่นวิดีโอพื้นหลัง
+    bgVideo.play().catch(console.warn);
+    
+    // เล่นเสียงเพลงเมื่อกดปุ่ม
+    bgMusic.volume = 1;
     bgMusic.play().catch(error => {
-      console.warn('เสียงอาจจะไม่ได้เล่นโดยอัตโนมัติบน iOS:', error);
+      console.warn('Cannot play audio:', error);
+      // ถ้าเล่นเสียงไม่ได้ ให้แสดงไอคอนปิดเสียง
+      audioIcon.className = 'fas fa-volume-mute';
+      isMuted = true;
     });
+    
+    // ตั้งค่าไอคอนเสียงเป็นเปิด
+    audioIcon.className = 'fas fa-volume-up';
 
-    // เพิ่มคลาส fade-in ให้กับ container เพื่อให้มีเอฟเฟกต์แสดงอย่างนุ่มนวล
+    // เพิ่มเอฟเฟกต์ fade-in
     setTimeout(() => {
       container.classList.add('fade-in');
     }, 100);
