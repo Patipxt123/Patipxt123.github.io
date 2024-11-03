@@ -5,46 +5,55 @@ window.addEventListener('load', () => {
   const audioIcon = document.getElementById('audioIcon');
   const bgVideo = document.getElementById('bg-video');
   let isMuted = false;
+
+  // เช็คว่าเป็น iOS หรือไม่
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
   
-  // เริ่มต้นให้เสียงปิดจนกว่าจะกดปุ่ม Click to Enter
+  // เริ่มต้นให้เสียงปิด
   bgMusic.volume = 0;
   
+  // ฟังก์ชันควบคุมเสียงสำหรับ iOS
+  const toggleSound = () => {
+    if (isMuted) {
+      if (isIOS) {
+        bgMusic.play();
+      }
+      bgMusic.volume = 1;
+      audioIcon.className = 'fas fa-volume-up';
+    } else {
+      if (isIOS) {
+        bgMusic.pause();
+      }
+      bgMusic.volume = 0;
+      audioIcon.className = 'fas fa-volume-mute';
+    }
+    isMuted = !isMuted;
+  };
+
   // เริ่มต้นการทำงานเมื่อกดปุ่ม Click to Enter
   clickToEnter.addEventListener('click', () => {
-    // ซ่อนปุ่ม Click to Enter และแสดง container
     clickToEnter.style.display = 'none';
     container.style.display = 'block';
     
-    // เล่นวิดีโอพื้นหลัง
     bgVideo.play().catch(console.warn);
     
-    // เล่นเสียงเพลงเมื่อกดปุ่ม
+    // เล่นเสียงเมื่อกดปุ่ม
     bgMusic.volume = 1;
     bgMusic.play().catch(error => {
       console.warn('Cannot play audio:', error);
-      // ถ้าเล่นเสียงไม่ได้ ให้แสดงไอคอนปิดเสียง
       audioIcon.className = 'fas fa-volume-mute';
       isMuted = true;
     });
     
-    // ตั้งค่าไอคอนเสียงเป็นเปิด
     audioIcon.className = 'fas fa-volume-up';
 
-    // เพิ่มเอฟเฟกต์ fade-in
     setTimeout(() => {
       container.classList.add('fade-in');
     }, 100);
   });
 
-  // ปุ่มควบคุมเสียง
+  // ปุ่มควบคุมเสียงที่ปรับปรุงใหม่
   audioIcon.addEventListener('click', () => {
-    if (isMuted) {
-      bgMusic.volume = 1;
-      audioIcon.className = 'fas fa-volume-up';
-    } else {
-      bgMusic.volume = 0;
-      audioIcon.className = 'fas fa-volume-mute';
-    }
-    isMuted = !isMuted;
+    toggleSound();
   });
 });
